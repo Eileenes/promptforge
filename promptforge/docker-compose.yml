@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  promptforge:
+    build: .
+    ports:
+      - "8777:8777"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    restart: unless-stopped

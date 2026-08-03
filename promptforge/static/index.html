@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptForge - AI 提示词锻造工具</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔨</text></svg>">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="logo">🔨 PromptForge</span>
+            <span class="version">v1.0.0</span>
+        </div>
+        <div class="nav-tabs">
+            <button class="tab active" data-tab="prompts">我的提示词</button>
+            <button class="tab" data-tab="library">模板库</button>
+            <button class="tab" data-tab="optimize">优化器</button>
+            <button class="tab" data-tab="test">测试台</button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Prompts Tab -->
+        <section id="tab-prompts" class="tab-content active">
+            <div class="header-row">
+                <h2>我的提示词</h2>
+                <button class="btn btn-primary" onclick="showCreateModal()">+ 新建提示词</button>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="搜索提示词..." oninput="loadPrompts()">
+                <select id="category-filter" onchange="loadPrompts()">
+                    <option value="">全部分类</option>
+                    <option value="general">通用</option>
+                    <option value="coding">编程</option>
+                    <option value="writing">写作</option>
+                    <option value="system">系统</option>
+                    <option value="business">商业</option>
+                </select>
+            </div>
+            <div id="prompts-list" class="prompts-grid"></div>
+        </section>
+
+        <!-- Library Tab -->
+        <section id="tab-library" class="tab-content">
+            <h2>精选模板库</h2>
+            <p class="subtitle">从精选模板快速导入，或搜索找到你需要的</p>
+            <div class="search-bar">
+                <input type="text" id="library-search" placeholder="搜索模板..." oninput="searchLibrary()">
+            </div>
+            <div id="library-list" class="library-grid"></div>
+        </section>
+
+        <!-- Optimize Tab -->
+        <section id="tab-optimize" class="tab-content">
+            <h2>提示词优化器</h2>
+            <p class="subtitle">减少 token 用量，保持语义不变。灵感来自 caveman (83.8k⭐) 和 ponytail (73.8k⭐)</p>
+            <div class="optimize-layout">
+                <div class="optimize-input">
+                    <label>原始提示词</label>
+                    <textarea id="optimize-input-text" placeholder="粘贴你的提示词..." rows="12"></textarea>
+                    <div class="optimize-controls">
+                        <select id="optimize-strategy">
+                            <option value="minimal">最小优化 (仅去冗余)</option>
+                            <option value="balanced" selected>平衡优化 (推荐)</option>
+                            <option value="aggressive">激进优化 (最大压缩)</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="runOptimize()">优化</button>
+                    </div>
+                </div>
+                <div class="optimize-output">
+                    <label>优化结果</label>
+                    <textarea id="optimize-output-text" readonly rows="12" placeholder="优化后的提示词将显示在这里..."></textarea>
+                    <div id="optimize-stats" class="optimize-stats"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Test Tab -->
+        <section id="tab-test" class="tab-content">
+            <h2>测试台</h2>
+            <p class="subtitle">多模型测试 & 效果评分</p>
+            <div class="test-layout">
+                <div class="test-config">
+                    <h3>配置</h3>
+                    <label>选择提示词</label>
+                    <select id="test-prompt-select" onchange="loadPromptForTest()"></select>
+                    <label>LLM 提供商</label>
+                    <select id="test-provider" onchange="updateModelOptions()"></select>
+                    <label>模型</label>
+                    <select id="test-model"></select>
+                    <label>输入文本 (可选)</label>
+                    <textarea id="test-input" placeholder="附加输入..." rows="4"></textarea>
+                    <button class="btn btn-primary" onclick="runTest()">运行测试</button>
+                    <button class="btn btn-secondary" onclick="runBenchmark()">效果评分</button>
+                </div>
+                <div class="test-results">
+                    <h3>结果</h3>
+                    <div id="test-output" class="test-output"></div>
+                    <div id="benchmark-output" class="benchmark-output"></div>
+                    <div id="test-history" class="test-history"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Create/Edit Modal -->
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">新建提示词</h3>
+                <button class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="prompt-id">
+                <label>标题</label>
+                <input type="text" id="prompt-title" placeholder="提示词标题">
+                <label>分类</label>
+                <input type="text" id="prompt-category" placeholder="例如: coding, writing" value="general">
+                <label>描述</label>
+                <input type="text" id="prompt-description" placeholder="简短描述">
+                <label>内容</label>
+                <textarea id="prompt-content" placeholder="提示词内容..." rows="10"></textarea>
+                <label>标签 (逗号分隔)</label>
+                <input type="text" id="prompt-tags" placeholder="tag1, tag2, tag3">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="savePrompt()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
